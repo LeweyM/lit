@@ -1,6 +1,7 @@
 require "pathname"
 require "fileutils"
 
+require_relative './refs'
 require_relative './author'
 require_relative './workspace'
 require_relative './database'
@@ -33,6 +34,7 @@ when "commit"
 
   workspace = Workspace.new(root_path)
   database = Database.new(db_path)
+  refs = Refs.new(git_path)
 
   entries = workspace.list_files.map do |path|
     data = workspace.read_file(path)
@@ -46,11 +48,12 @@ when "commit"
   tree = Tree.new(entries)
   database.store(tree)
 
+  parent = refs.read_head
   email = ENV.fetch("GIT_AUTHOR_EMAIL")
   name = ENV.fetch("GIT_AUTHOR_NAME")
   author = Author.new(name, email, Time.now)
   message = $stdin.read
-  commit = Commit.new(tree.oid, author, message)
+  commit = Commit.new(parent, tree.oid, author, message)
 
   database.store(commit)
 
@@ -58,7 +61,7 @@ when "commit"
     file.puts(commit.oid)
   end
 
-  puts "[(root commit) #{ commit.oid }] #{ message.lines.first }"
+  puts "[#{parent.nil? ? "(root commit)" : ""} #{ commit.oid }] #{ message.lines.first }"
   exit 0
 
 else

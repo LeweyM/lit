@@ -68,3 +68,4 @@ else
   $stderr.puts "lit: '#{command}' is not a valid lit command"
   exit 1
 end
+
